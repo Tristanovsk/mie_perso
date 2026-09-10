@@ -5,15 +5,29 @@ import pandas as pd
 import xarray as xr
 
 
-class psd():
+class PSD:
     def __init__(self):
         pass
 
-    def lognorm(self,r,rn_med=1,sigma=0.1):
+    def norm(self, r, mu=1, sigma=0.5):
+        return (np.exp(-(r - mu) ** 2 / (2 * sigma ** 2))
+                / (sigma * np.sqrt(2 * np.pi)))
+
+    def lognorm(self, r, rn_med=1, sigma=0.5):
         mu = np.log(rn_med)
-        return (np.exp(-(np.log(r) - mu)**2 / (2 * sigma**2))
+        return (np.exp(-(np.log(r) - mu) ** 2 / (2 * sigma ** 2))
                 / (r * sigma * np.sqrt(2 * np.pi)))
 
+    def microplastic_AF2021(self, r, gamma=.5):
+        '''
+        Size distribution for Microplastics from Aoki and Furue, 2021,
+        https://doi.org/10.1371/journal.pone.0259781
+        :return:
+        '''
+        d = 2 * r
+        psd = d ** -4 / (np.exp(1 / (gamma * d)) - 1)
+        norm = np.trapz(psd, r)
+        return psd/norm
 
     def power_law_junge(self,r, slope=-3.5, rmin=0.03, rmax=100):
         psd = np.array(r ** slope)
@@ -49,7 +63,7 @@ class psd():
         return [fmt.format(x) for x in arr]
 
 
-class size_param:
+class SizeParam:
     '''
      Size Distribution and Geometrical Parameters
     '''
@@ -74,9 +88,13 @@ class size_param:
             'sigeff': self.sigeff,
         }
 
+    def to_annotation_r(self):
+        return '$r_{mean}=$' + '{:.2e}'.format(self.rmean) + ' $\mu m$\n $r_{eff}=$' + '{:.2e}'.format(
+            self.reff) + ' $\mu m$'
+
     def to_annotation(self):
-        return '$r_{mean}=$' + '{:.3f}'.format(self.rmean) + '$\mu m,\ r_{eff}=$' + '{:.3f}'.format(
-            self.reff) + '$\mu m,\ \sigma^2_{eff}=$' + '{:.3f}'.format(self.veff) + '$\mu m^2$'
+        return r'$r_{mean}=$' + '{:.3f}'.format(self.rmean) + '$\mu m$\n$ \ r_{eff}=$' + '{:.3f}'.format(
+            self.reff) + '$\mu m$\n$ \sigma^2_{eff}=$' + '{:.3f}'.format(self.veff) + '$\mu m^2$'
 
     def integr(self, order=1):
         _f = self.psd * self.radius ** order

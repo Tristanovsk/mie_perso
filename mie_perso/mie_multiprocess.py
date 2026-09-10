@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import glob
-from scipy.integrate import trapz  # import a single function for integration using trapezoidal rule
+from scipy.integrate import trapezoid  # import a single function for integration using trapezoidal rule
 import multiprocessing
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -19,7 +19,7 @@ from lmfit import models, report_fit
 import PyMieScatt as ps
 
 
-class processor():
+class Processor():
     def __init__(self):
         pass
 
@@ -123,7 +123,7 @@ class processor():
         SU = np.sum(res[:, 2], axis=0)
 
         if normalization in ['n', 'N', 'number', 'particles']:
-            _n = trapz(ndp, dp)
+            _n = trapezoid(ndp, dp)
             SL /= _n
             SR /= _n
             SU /= _n
@@ -132,9 +132,9 @@ class processor():
             SR /= np.max(SR)
             SU /= np.max(SU)
         elif normalization in ['t', 'T', 'total', 'TOTAL']:
-            SL /= trapz(SL, measure)
-            SR /= trapz(SR, measure)
-            SU /= trapz(SU, measure)
+            SL /= trapezoid(SL, measure)
+            SR /= trapezoid(SR, measure)
+            SU /= trapezoid(SU, measure)
         return measure, SL, SR, SU
 
     def ScatMat(self, p):
@@ -148,13 +148,21 @@ class processor():
         '''
         m, x, u = p
         Ntheta = len(u)
-        S11, S12, S33, S34 = np.zeros([Ntheta]), np.zeros([Ntheta]), np.zeros([Ntheta]), np.zeros([Ntheta])
+        S1, S2 = np.zeros([Ntheta], dtype=complex), np.zeros([Ntheta], dtype=complex)
+
+        nmax = np.round(2 + x + 4 * np.power(x, 1 / 3))
+        an, bn = ps.AutoMie_ab(m, x)
         for iu, u_ in enumerate(u):
-            S1, S2 = ps.MieS1S2(m, x, u_)
-            S11[iu] = (0.5 * (np.abs(S2) ** 2 + np.abs(S1) ** 2)).real
-            S12[iu] = (0.5 * (np.abs(S2) ** 2 - np.abs(S1) ** 2)).real
-            S33[iu] = (0.5 * (np.conjugate(S2) * S1 + S2 * np.conjugate(S1))).real
-            S34[iu] = (0.5j * (S1 * np.conjugate(S2) - S2 * np.conjugate(S1))).real
+            pin, taun = ps.MiePiTau(u_, nmax)
+            n = np.arange(1, int(nmax) + 1)
+            n2 = (2 * n + 1) / (n * (n + 1))
+            S1[iu] = np.sum(n2[0:len(an)] * (an * pin[0:len(an)] + bn * taun[0:len(bn)]))
+            S2[iu] = np.sum(n2[0:len(an)] * (an * taun[0:len(an)] + bn * pin[0:len(bn)]))
+            # S1, S2 = ps.MieS1S2(m, x, u_)
+        S11 = (0.5 * (np.abs(S2) ** 2 + np.abs(S1) ** 2)).real
+        S12 = (0.5 * (np.abs(S2) ** 2 - np.abs(S1) ** 2)).real
+        S33 = (0.5 * (np.conjugate(S2) * S1 + S2 * np.conjugate(S1))).real
+        S34 = (0.5j * (S1 * np.conjugate(S2) - S2 * np.conjugate(S1))).real
         return S11, S12, S33, S34
 
     def ScatMat_mp(self, m, x, theta):
@@ -183,3 +191,15 @@ class processor():
                              attrs=dict(
                                  description='non-null scattering matrix terms from Mie computations using PyMieScatt'))
         return mueller
+
+    def Qeff_compute(self, p):
+        # fake wavelength to compute diameter
+        wl = 500
+        x, mr, mi = p
+
+        with open('/data/tmp/tmp_mieperso.txt', 'w') as f:
+            f.write(str(mr))
+
+        m = complex(mr, mi)
+        diameter = wl * x / np.pi
+        return [x, mr, mi, *ps.MieQ(m, wl, diameter)]

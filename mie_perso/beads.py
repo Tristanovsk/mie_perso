@@ -19,9 +19,9 @@ from lmfit import models, report_fit
 import PyMieScatt as ps
 
 from mie_perso import psd, mie_multiprocess
-p = mie_multiprocess.processor()
-size_param = psd.size_param
-psd = psd.psd()
+p = mie_multiprocess.Processor()
+size_param = psd.SizeParam
+psd = psd.PSD()
 
 
 # -------------------------------------
