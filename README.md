@@ -6,7 +6,7 @@
 
 ### Installation
 
-First, clone [the repository](https://github.com/Tristanovsk/invRrs#), , and execute the following command in the
+First, clone [the repository](https://github.com/Tristanovsk/mie_perso), and execute the following command in the
 local copy:
 
 ```
