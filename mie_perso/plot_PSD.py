@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import glob
-from scipy.integrate import trapz  # import a single function for integration using trapezoidal rule
+from scipy.integrate import trapezoid  # import a single function for integration using trapezoidal rule
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -71,13 +71,13 @@ def power_law_junge(r,slope=-3.5,rmin=0.03,rmax=100):
     psd=np.array(r**slope)
     psd[r < rmin]=0.
     psd[r > rmax]=0.
-    return psd / np.trapz(psd,r)
+    return psd / trapezoid(psd,r)
 
 def modif_power_law(r,slope=-3.5,rmin=0.03,rmax=100):
     psd=np.array((r/rmin)**slope)
     psd[r < rmin]=1
     psd[r > rmax]=0.
-    return psd / np.trapz(psd,r)
+    return psd / trapezoid(psd,r)
 
 def rmod2rmed(rmod, sig):
     return np.exp(np.log(rmod)+sig**2)
@@ -138,7 +138,7 @@ for i, rn_med in enumerate(rn_meds):
     ax.plot(r, n_r,   lw=2, label='mun='+str(mun),zorder=6)
     if i == 1:
         norm_log=n_r[idx]
-    print(np.trapz(n_r,r))
+    print(trapezoid(n_r,r))
 pow_coarse = power_law_junge(r,slope=junge_slopes[0])
 pow_fine = power_law_junge(r,slope=junge_slopes[1])
 #
@@ -175,9 +175,9 @@ for i, type in enumerate(types):
     ax.plot(r, v_r, 'k', ls=ls[i], lw=2, label=legs[i],zorder=6)
 # add power law for volume and variable logr (4/3*pi*r**3*n(r)/r)
 pow_coarse_v=4/3*np.pi*r**2 * pow_coarse
-pow_coarse_v=pow_coarse_v/trapz(pow_coarse_v,r)
+pow_coarse_v=pow_coarse_v/trapezoid(pow_coarse_v,r)
 pow_fine_v=4/3*np.pi*r**2 * pow_fine
-pow_fine_v=pow_fine_v/trapz(pow_fine_v,r)
+pow_fine_v=pow_fine_v/trapezoid(pow_fine_v,r)
 ax.plot(r, pow_coarse_v,  'r', lw=2,label='pow '+junge_str[0])
 ax.plot(r, pow_fine_v,  'g', lw=2,label='pow '+junge_str[1])
 
@@ -210,10 +210,10 @@ for i, type in enumerate(types):
     mod, pars = psd_log(type, mu1=mun[0], mu2=mun[1],  mu3=mun[2],sig1=sig[0], sig2=sig[1],  sig3=sig[2])
     n_r = mod.eval(pars, x=r)
     #n_r = y / (4 / 3 * np.pi * r ** 3)
-    ax.plot(r, n_r/np.trapz(n_r,r),  'k',ls=ls[i], lw=2, label=legs[i])
-    print(np.trapz(n_r,r))
-norm_3 = np.trapz(r**-3,r)
-norm_5 = np.trapz(r**-5,r)
+    ax.plot(r, n_r/trapezoid(n_r,r),  'k',ls=ls[i], lw=2, label=legs[i])
+    print(trapezoid(n_r,r))
+norm_3 = trapezoid(r**-3,r)
+norm_5 = trapezoid(r**-5,r)
 
 ax.plot(r, r**-3/norm_3,  'r', lw=2)
 ax.plot(r, r**-5/norm_5 ,  'g', lw=2)

@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 import xarray as xr
+from scipy.integrate import trapezoid
 
 
 class PSD:
@@ -26,20 +27,20 @@ class PSD:
         '''
         d = 2 * r
         psd = d ** -4 / (np.exp(1 / (gamma * d)) - 1)
-        norm = np.trapz(psd, r)
+        norm = trapezoid(psd, r)
         return psd/norm
 
     def power_law_junge(self,r, slope=-3.5, rmin=0.03, rmax=100):
         psd = np.array(r ** slope)
         psd[r < rmin] = 0.
         psd[r > rmax] = 0.
-        return psd / np.trapz(psd, r)
+        return psd / trapezoid(psd, r)
 
     def modif_power_law(self,r, slope=-3.5, rmin=0.03, rmax=100):
         psd = np.array((r / rmin) ** slope)
         psd[r < rmin] = 1
         psd[r > rmax] = 0.
-        return psd / np.trapz(psd, r)
+        return psd / trapezoid(psd, r)
 
     def rmod2rmed(self,rmod, sig):
         return np.exp(np.log(rmod) + sig ** 2)
@@ -98,12 +99,12 @@ class SizeParam:
 
     def integr(self, order=1):
         _f = self.psd * self.radius ** order
-        return np.trapz(_f, self.radius)
+        return trapezoid(_f, self.radius)
 
     def moment(self, order=1):
         _f = self.psd * np.pi * self.radius ** order
-        return np.trapz(_f, self.radius)
+        return trapezoid(_f, self.radius)
 
     def variance(self, G, reff):
         _f = self.psd * np.pi * ((self.radius - reff) * self.radius) ** 2
-        return np.trapz(_f, self.radius) / (reff ** 2 * G)
+        return trapezoid(_f, self.radius) / (reff ** 2 * G)

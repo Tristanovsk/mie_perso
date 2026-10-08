@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import glob
-from scipy.integrate import trapz  # import a single function for integration using trapezoidal rule
+from scipy.integrate import trapezoid  # import a single function for integration using trapezoidal rule
 import multiprocessing
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -82,12 +82,12 @@ for wavelength in [400, 500, 600, 700]:
 
     # aSDn = np.pi*((dp/2)**2)*ndp
     aSDn = ndp
-    S11 = np.trapz(mueller.S11 * aSDn, dp, axis=0)
-    S12 = np.trapz(mueller.S12 * aSDn, dp, axis=0)
-    S33 = np.trapz(mueller.S33 * aSDn, dp, axis=0)
-    S34 = np.trapz(mueller.S34 * aSDn, dp, axis=0)
+    S11 = trapezoid(mueller.S11 * aSDn, dp, axis=0)
+    S12 = trapezoid(mueller.S12 * aSDn, dp, axis=0)
+    S33 = trapezoid(mueller.S33 * aSDn, dp, axis=0)
+    S34 = trapezoid(mueller.S34 * aSDn, dp, axis=0)
 
-    norm = trapz(S11 * np.sin(theta), theta) / 2
+    norm = trapezoid(S11 * np.sin(theta), theta) / 2
     axs[0, 0].plot(ang, S11 / norm, lw=1, label='$wl_0=$'+str(wl)+'$wl_w=$'+str(wl_medium))
     axs[0, 0].semilogy()
     axs[0, 1].plot(ang, S12 / S11, lw=1)
