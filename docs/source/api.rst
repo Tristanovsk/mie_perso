@@ -10,3 +10,4 @@ API
 
    mie_perso.mie_multiprocess
    mie_perso.psd
+   mie_perso.size_average
