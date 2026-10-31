@@ -157,19 +157,12 @@ alpha = 0.85
 
 # for igamma, gamma in enumerate([ 0.5, 1. , 2.,6.]):
 gamma = 2.
-Csca_int = []
-for wavelength in att_coef.wavelength:
-    wavelength_medium = wavelength / nMedium
-    radius = mueller.x * wavelength_medium / np.pi / 2
-
-    ndp = psd.lognorm(radius, rn_med=gamma, sigma=sigma)
-    # ndp=ndp.where(ndp.x<100,0)
-
-    Csca_ = xQeff.Qsca.isel(nr=[1, 4, 8, 12], ni=0).assign_coords(radius=("x", radius.data)) * (
-                np.pi * radius.data ** 2 * ndp)
-    Csca_int.append(Csca_.integrate('radius').compute())
-
-Csca_hyp = xr.concat(Csca_int, dim='wavelength')
+# mean scattering cross section (micron**2) of a lognormal population (rn_med in micron)
+weights = size_average.psd_weights(
+    xQeff.x, att_coef.wavelength.values * 1e-3, lambda r: psd.lognorm(r, rn_med=gamma, sigma=sigma),
+    n_medium=nMedium).assign_coords(wavelength=att_coef.wavelength.values)
+Csca_hyp = size_average.integrate_cross_section(
+    xQeff.isel(nr=[1, 4, 8, 12], ni=0), weights, variables=('Qsca',)).Csca
 Csca_hyp.plot.line(x='wavelength')
 
 # -----------------------------------
@@ -184,6 +177,7 @@ sample = 'Beads_3um'
 # put a fake number concentration (in number / micron**3)
 concentration = 0.098
 radius_nm = 1500
+radius_mic = 1e-3 * radius_nm
 
 wl0 = att_coef.wavelength
 wl0_mic = wl0 * 10 ** -3
@@ -215,9 +209,8 @@ if mono_index:
     axs.plot(arr.wavelength, arr, color='gray', lw=1.5,label='Mie theory')
 else:
 
-    for nr, arr in b_coef.sel(nr=b_coef.nr[0:-1:2]).groupby('nr'):
-        print(nr)
-        axs.plot(arr.wavelength, arr, color=cmap(norm(nr)), alpha=0.6, lw=1.5)
+    for nr in b_coef.nr.values[0:-1:2]:
+        axs.plot(b_coef.wavelength, b_coef.sel(nr=nr), color=cmap(norm(nr)), alpha=0.6, lw=1.5)
 
 axs.set_title('')
 axs.set_ylabel('$Scattering\ coef.\ (m^{-1})$')
@@ -319,11 +312,11 @@ fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(12, 8), sharey=True)
 arr = []
 for ir, radius in enumerate(radius_):
     wgt = ndp[ir]
-    rad_mic = radius * 1000
-    x_ = 2 * np.pi * rad_mic / wl_water
+    rad_nm = radius * 1000
+    x_ = 2 * np.pi * rad_nm / wl_water
     alpha = (wgt / ndp.max()) ** 0.15
-    b_coef = concentration * xQeff.Qsca.isel(nr=range(-19, 0), ni=0).interp(x=x_) * np.pi * radius_mic ** 2
-    b_coef_ = b_coef.interp(nr=m)
+    b_coef_r = concentration * xQeff.Qsca.isel(nr=range(-19, 0), ni=0).interp(x=x_) * np.pi * radius ** 2
+    b_coef_ = b_coef_r.interp(nr=m)
 
     b_coef_.plot.line(x='wavelength', color='black', alpha=alpha, ls='-', lw=1.3, label='computed', ax=axs)
     arr.append(b_coef_.assign_coords(radius=radius) * wgt)
@@ -346,9 +339,8 @@ fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(12, 8), sharey=True)
 
 att_coef[sample].plot(x='wavelength', color='red', lw=3.5, label='measured', ax=axs)
 # plt.legend()
-for nr, arr in b_coef.sel(nr=b_coef.nr[0:-2:3]).groupby('nr'):
-    print(nr)
-    axs.plot(arr.wavelength, arr, color=cmap(norm(nr)), alpha=0.6, lw=1.5)
+for nr in b_coef.nr.values[0:-2:3]:
+    axs.plot(b_coef.wavelength, b_coef.sel(nr=nr), color=cmap(norm(nr)), alpha=0.6, lw=1.5)
 
 b_coef_beads.plot.line(x='wavelength', color='black', ls=':', lw=1.8, label='computed', ax=axs)
 b_coef_int.plot.line(x='wavelength', color='black', ls='-', lw=2.3, label='computed with size ditrib.', ax=axs)
@@ -370,27 +362,27 @@ plt.savefig(opj(figdir,'scat_coef_beads_' + sample + suff + '.png'), dpi=300)
 cmap = mpl.colors.LinearSegmentedColormap.from_list("",
                                                     ['navy', "blue", 'lightskyblue',
                                                      'gray', 'yellowgreen', 'forestgreen','orange','red'])
-norm = mpl.colors.Normalize(vmin=5, vmax=30)
+norm = mpl.colors.Normalize(vmin=0, vmax=40)
 sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
 sm.set_array([])
 fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(12, 8), sharey=True)
 
 att_coef[sample].plot(x='wavelength', color='red', lw=3.5, label='measured', ax=axs)
 # plt.legend()
-for tempC in [0,10,20,30,40]:
+for salinity in [0, 10, 20, 30, 40]:
     wl = wl0.data.astype(float)
-    n_w = n_water_perso(wl,water_temp=20,water_sal=tempC)
+    n_w = n_water_perso(wl, water_temp=20, water_sal=salinity)
+    wl_water = wl0 / n_w
 
     n_p = n_polystyrene(wl0_mic)
     m = n_p / n_w
     arr = []
     for ir, radius in enumerate(radius_):
         wgt = ndp[ir]
-        rad_mic = radius * 1000
-        x_ = 2 * np.pi * rad_mic / wl_water
-        alpha = (wgt / ndp.max()) ** 0.15
-        b_coef = concentration * xQeff.Qsca.isel(nr=range(-19, 0), ni=0).interp(x=x_) * np.pi * radius_mic ** 2
-        b_coef_ = b_coef.interp(nr=m)
+        rad_nm = radius * 1000
+        x_ = 2 * np.pi * rad_nm / wl_water
+        b_coef_r = concentration * xQeff.Qsca.isel(nr=range(-19, 0), ni=0).interp(x=x_) * np.pi * radius ** 2
+        b_coef_ = b_coef_r.interp(nr=m)
 
 
         arr.append(b_coef_.assign_coords(radius=radius) * wgt)
@@ -398,7 +390,7 @@ for tempC in [0,10,20,30,40]:
     b_coef_ = xr.concat(arr, dim='radius')
     b_coef_int = b_coef_.integrate('radius').compute()
 
-    axs.plot(b_coef_int.wavelength,b_coef_int, color=cmap(norm(tempC)), alpha=0.6, lw=2)
+    axs.plot(b_coef_int.wavelength, b_coef_int, color=cmap(norm(salinity)), alpha=0.6, lw=2)
 
 
 axs.set_title('')

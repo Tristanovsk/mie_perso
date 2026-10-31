@@ -41,9 +41,9 @@ gamma = 1.85
 x = np.linspace(1e-2 ** (1 / gamma), 3500 ** (1 / gamma), 10001) ** gamma
 
 x = np.linspace(1,40000,1001)
-ofile = 'mie_perso/data/mueller_mie_' + str(m)[1:-1] + '_t3600_x1001.nc'
-ofile = 'mie_perso/data/mueller_mie_' + str(m)[1:-1] + '_t7200_x10001.nc'
-ofile = 'mie_perso/data/mueller_mie_' + str(m)[1:-1] + '_supres_xloglin.nc'
+ofile = 'data/mueller_mie_' + str(m)[1:-1] + '_t3600_x1001.nc'
+ofile = 'data/mueller_mie_' + str(m)[1:-1] + '_t7200_x10001.nc'
+ofile = 'data/mueller_mie_' + str(m)[1:-1] + '_supres_xloglin.nc'
 
 if os.path.exists(ofile):
     mueller = xr.open_dataset(ofile)
@@ -103,13 +103,13 @@ for imax,rmax in enumerate(rmaxs):
     axs[imax].set_xlabel('$Scattering\ angle\ (deg)$')
 axs[ 0].set_ylabel('S11')
 # add outcomes from Mishchenko spher code
-mat = pd.read_csv('./mie_perso/data/Mie_shchenko_ScatMat_junge_slope-4.00_rmin0.010_rmax20.0_nr1.050_ni-.0010_wl650.0.txt',
+mat = pd.read_csv('data/Mie_shchenko_ScatMat_junge_slope-4.00_rmin0.010_rmax20.0_nr1.050_ni-.0010_wl650.0.txt',
                   sep='\s+', skiprows=6, header=None)
 axs[0].plot(mat.values[:, 0], mat.values[:, 3], 'k',label='NASA-GISS rmin 0.01')
-mat = pd.read_csv('./mie_perso/data/Mie_shchenko_ScatMat_junge_slope-4.00_rmin0.010_rmax50.0_nr1.050_ni-.0010_wl650.0.txt',
+mat = pd.read_csv('data/Mie_shchenko_ScatMat_junge_slope-4.00_rmin0.010_rmax50.0_nr1.050_ni-.0010_wl650.0.txt',
                   sep='\s+', skiprows=6, header=None)
 axs[1].plot(mat.values[:, 0], mat.values[:, 3], 'k',label='NASA-GISS rmin 0.01')
-mat = pd.read_csv('./mie_perso/data/Mie_shchenko_ScatMat_junge_slope-4.00_rmin0.010_rmax100.0_nr1.050_ni-.0010_wl650.0.txt',
+mat = pd.read_csv('data/Mie_shchenko_ScatMat_junge_slope-4.00_rmin0.010_rmax100.0_nr1.050_ni-.0010_wl650.0.txt',
                   sep='\s+', skiprows=6, header=None)
 axs[2].plot(mat.values[:, 0], mat.values[:, 3], 'k',label='NASA-GISS rmin 0.01')
 for imax,rmax in enumerate(rmaxs):
@@ -124,8 +124,8 @@ plt.savefig('mie_perso/fig/junge_sensitivity_loglog_slope' + str(slope) + '_m' +
 vsf_names = ['pf_Arizonadust', 'pf_C.autotrophica', 'pf_C.closterium',
              'pf_D.salina', 'pf_K.mikimotoi', 'pf_S.cf.costatum', 'pf_Beads_3µm',
              'pf_Beads_300nm', 'pf_Formazin(2ntu)', 'pf_Formazin(4ntu)']
-vsf = pd.read_csv('./mie_perso/data/tabulated_phase_function_feb2015_full.txt', skiprows=11, na_values='NA')
-mat = pd.read_csv('./mie_perso/data/Mie_shchenko_ScatMat_junge_slope-3.40_rmin0.010_nr1.050_ni-.0010_wl400.0.txt',
+vsf = pd.read_csv('data/tabulated_phase_function_feb2015_full.txt', skiprows=11, na_values='NA')
+mat = pd.read_csv('data/Mie_shchenko_ScatMat_junge_slope-3.40_rmin0.010_nr1.050_ni-.0010_wl400.0.txt',
                   sep='\s+', skiprows=6, header=None)
 
 fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(15, 10), sharex=True)

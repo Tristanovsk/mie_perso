@@ -145,6 +145,49 @@ def integrate_scatmat(mueller, weights):
     return _wavelength_medium(weights) ** 2 / np.pi * size_average(mueller, weights)
 
 
+def forward_grid(theta_max=np.radians(2.), n=800, theta_min=1e-6):
+    r'''Fine angular grid (radians) for the forward peak of large particles.
+
+    ``0`` followed by ``n`` angles spaced geometrically from ``theta_min`` to
+    ``theta_max``. The diffraction pattern scales with :math:`x\theta` (central
+    lobe up to :math:`x\theta = 3.83`, then rings of period :math:`\pi/x`
+    decreasing as :math:`(x\theta)^{-3}`), so that a geometric grid resolves it
+    for all the size parameters. The defaults give a step of 1.3 % of the angle,
+    e.g. 1e-5 rad at 0.05°, to be merged with a regular grid with
+    :func:`merge_forward`.
+    '''
+    return np.concatenate([[0.], np.geomspace(theta_min, theta_max, n)])
+
+
+def merge_forward(mueller, mueller_fwd, dim='theta'):
+    r'''Replace the forward part of a scattering matrix by a finer angular grid.
+
+    For large size parameters, the forward diffraction peak (angular width
+    :math:`\sim 1/x`) and the first diffraction rings are narrower than the
+    step of a regular grid of a few thousand angles (0.05° for
+    :math:`x \gtrsim 1000`): the trapezoidal rule then misses or overestimates
+    a large part of :math:`\frac{1}{2}\int F_{11}\sin\theta\,d\theta = C_{sca}`
+    (half of it for millimetre particles in the visible). Computing the matrix
+    on :func:`forward_grid` and merging it with the main grid restores the
+    normalization.
+
+    Parameters
+    ----------
+    mueller, mueller_fwd : xarray.Dataset or xarray.DataArray
+        Matrices on the main grid and on the fine forward grid, with the same
+        other dimensions (e.g. both integrated with the same weights).
+    dim : str, optional
+        Name of the angle dimension.
+
+    Returns
+    -------
+    Same type as ``mueller``, on the merged (non-uniform) angular grid: the
+    forward grid, then the main grid beyond its last angle.
+    '''
+    theta_max = mueller_fwd[dim].max()
+    return xr.concat([mueller_fwd, mueller.where(mueller[dim] > theta_max, drop=True)], dim=dim)
+
+
 def integrate_cross_section(Qeff, weights, variables=('Qext', 'Qsca', 'Qabs', 'Qback')):
     r'''Mean cross sections of a particle population (unit of :math:`\lambda^2`).
 

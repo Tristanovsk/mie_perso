@@ -15,9 +15,11 @@
       :toctree:
       :template: custom-base-template.rst
    
+      forward_grid
       integrate_cross_section
       integrate_scatmat
       mean_asymmetry
+      merge_forward
       psd_family_weights
       psd_weights
       size_average

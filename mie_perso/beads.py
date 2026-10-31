@@ -36,7 +36,7 @@ m = npolystyrene / nMedium - 0.000j
 
 theta = np.linspace(0, np.pi, 3600)
 x = np.logspace(np.log10(1), 2, 1001)
-ofile = 'mie_perso/data/mueller_mie_' + format(m,'1.3f') + '_t3600.nc'
+ofile = 'data/mueller_mie_' + format(m,'1.3f') + '_t3600.nc'
 
 if os.path.exists(ofile):
     mueller = xr.open_dataset(ofile)

@@ -147,7 +147,7 @@ sample = 'Beads_3um'
 # put a fake number concentration (in number / micron**3)
 concentration = 0.098
 radius_nm = 1500
-radius_mic = radius_nm * 1e3
+radius_mic = radius_nm * 1e-3
 wl0 = wls
 wl0_mic = wl0 * 10 ** -3
 
@@ -176,9 +176,8 @@ if mono_index:
     axs.plot(arr.wavelength, arr, color='gray', lw=1.5, label='Mie theory')
 else:
 
-    for nr, arr in b_coef.sel(nr=b_coef.nr[0:-1:2]).groupby('nr'):
-        print(nr)
-        axs.plot(arr.wavelength, arr, color=cmap(norm(nr)), alpha=0.6, lw=1.5)
+    for nr in b_coef.nr.values[0:-1:2]:
+        axs.plot(b_coef.wavelength, b_coef.sel(nr=nr), color=cmap(norm(nr)), alpha=0.6, lw=1.5)
 
 axs.set_title('')
 axs.set_ylabel('$Scattering\ coef.\ (m^{-1})$')
@@ -294,7 +293,7 @@ for diam_mic in [0.3, 0.7, 1, 3]:
         rad_nm = radius * 1000
         x_ = 2 * np.pi * rad_nm / wl_water
         alpha = (wgt / ndp.max()) ** 0.15
-        b_coef_tmp = concentration * xQeff.Qback.isel(nr=range(-19, 0), ni=0).interp(x=x_) * np.pi * radius_mic ** 2
+        b_coef_tmp = concentration * xQeff.Qback.isel(nr=range(-19, 0), ni=0).interp(x=x_) * np.pi * radius ** 2
         b_coef_ = b_coef_tmp.interp(nr=m)
 
         b_coef_.plot.line(x='wavelength', color='black', alpha=alpha, ls='-', lw=1.3, label='computed', ax=axs)
@@ -317,9 +316,8 @@ for diam_mic in [0.3, 0.7, 1, 3]:
     fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(12, 8), sharey=True)
     axs.minorticks_on()
     # plt.legend()
-    for nr, arr in b_coef.sel(nr=b_coef.nr[:]).groupby('nr'):
-        print(nr)
-        axs.plot(arr.wavelength, arr, color=cmap(norm(nr)), alpha=0.6, lw=1.5)
+    for nr in b_coef.nr.values:
+        axs.plot(b_coef.wavelength, b_coef.sel(nr=nr), color=cmap(norm(nr)), alpha=0.6, lw=1.5)
 
     b_coef_beads.plot.line(x='wavelength', color='black', ls=':', lw=1.8, label='computed', ax=axs)
     b_coef_int.plot.line(x='wavelength', color='black', ls='-', lw=2.3, label='computed with size ditrib.', ax=axs)
@@ -346,13 +344,11 @@ theta_rad = np.radians(angle)
 xarr = mueller.S11.sel(theta=theta_rad,method="nearest")
 suff = '_nwperso'
 
-angle=[110,111,112,113,114,115,116,117,118,119,120]
-
+# sensor angular response: normal distribution centred on angle (deg)
 ang_min,ang_max=np.radians(95),np.radians(135)
-theta_rad = np.radians(angle)
 xarr = mueller.S11.sel(theta=slice(ang_min,ang_max)) # .integrate('theta')
 angles = np.degrees(xarr.theta)
-dist = psd.norm(angles,mu=114,sigma=5)
+dist = psd.norm(angles,mu=angle,sigma=5)
 plt.figure()
 plt.plot(angles,dist)
 plt.xlabel('Scattering angle (deg.)')
@@ -395,7 +391,7 @@ for diam_mic in [0.3, 0.7, 1, 3]:
         rad_nm = radius * 1000
         x_ = 2 * np.pi * rad_nm / wl_water
         alpha = (wgt / ndp.max()) ** 0.15
-        b_coef_tmp = concentration * xarr.isel(nr=range(-19, 0)).interp(x=x_) * np.pi * radius_mic ** 2
+        b_coef_tmp = concentration * xarr.isel(nr=range(-19, 0)).interp(x=x_) * np.pi * radius ** 2
         b_coef_ = b_coef_tmp.interp(nr=m)
 
         #b_coef_.plot.line(x='wavelength', color='black', alpha=alpha, ls='-', lw=1.3, label='computed', ax=axs)
@@ -418,9 +414,8 @@ for diam_mic in [0.3, 0.7, 1, 3]:
     fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(12, 8), sharey=True)
     axs.minorticks_on()
     # plt.legend()
-    for nr, arr in b_coef.sel(nr=b_coef.nr[:]).groupby('nr'):
-        print(nr)
-        axs.plot(arr.wavelength, arr, color=cmap(norm(nr)), alpha=0.6, lw=1.5)
+    for nr in b_coef.nr.values:
+        axs.plot(b_coef.wavelength, b_coef.sel(nr=nr), color=cmap(norm(nr)), alpha=0.6, lw=1.5)
 
     b_coef_beads.plot.line(x='wavelength', color='black', ls=':', lw=1.8, label='computed', ax=axs)
     b_coef_int.plot.line(x='wavelength', color='black', ls='-', lw=2.3, label='computed with size ditrib.', ax=axs)
@@ -449,34 +444,33 @@ for diam_mic in [0.3, 0.7, 1, 3]:
 cmap = mpl.colors.LinearSegmentedColormap.from_list("",
                                                     ['navy', "blue", 'lightskyblue',
                                                      'gray', 'yellowgreen', 'forestgreen', 'orange', 'red'])
-norm = mpl.colors.Normalize(vmin=5, vmax=30)
+norm = mpl.colors.Normalize(vmin=0, vmax=40)
 sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
 sm.set_array([])
 fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(12, 8), sharey=True)
 
-att_coef[sample].plot(x='wavelength', color='red', lw=3.5, label='measured', ax=axs)
-# plt.legend()
-for tempC in [0, 10, 20, 30, 40]:
+# beads of the last diameter of the loop above
+for salinity in [0, 10, 20, 30, 40]:
     wl = wl0.data.astype(float)
-    n_w = n_water_perso(wl, water_temp=20, water_sal=tempC)
+    n_w = n_water_perso(wl, water_temp=20, water_sal=salinity)
+    wl_water = wl0 / n_w
 
     n_p = n_polystyrene(wl0_mic)
     m = n_p / n_w
     arr = []
     for ir, radius in enumerate(radius_):
         wgt = ndp[ir]
-        rad_mic = radius * 1000
-        x_ = 2 * np.pi * rad_mic / wl_water
-        alpha = (wgt / ndp.max()) ** 0.15
-        b_coef = concentration * xQeff.Qsca.isel(nr=range(-19, 0), ni=0).interp(x=x_) * np.pi * radius_mic ** 2
-        b_coef_ = b_coef.interp(nr=m)
+        rad_nm = radius * 1000
+        x_ = 2 * np.pi * rad_nm / wl_water
+        b_coef_tmp = concentration * xQeff.Qsca.isel(nr=range(-19, 0), ni=0).interp(x=x_) * np.pi * radius ** 2
+        b_coef_ = b_coef_tmp.interp(nr=m)
 
         arr.append(b_coef_.assign_coords(radius=radius) * wgt)
 
     b_coef_ = xr.concat(arr, dim='radius')
     b_coef_int = b_coef_.integrate('radius').compute()
 
-    axs.plot(b_coef_int.wavelength, b_coef_int, color=cmap(norm(tempC)), alpha=0.6, lw=2)
+    axs.plot(b_coef_int.wavelength, b_coef_int, color=cmap(norm(salinity)), alpha=0.6, lw=2)
 
 axs.set_title('')
 axs.set_ylabel('$Scattering\ coef.\ (m^{-1})$')

@@ -159,3 +159,5 @@ fabric.properties
 /mie_perso/lut/
 # Windows thumbnail caches
 Thumbs.db*
+# third-party refractiveindex.info scripts and database (GPL, ~36 MB)
+/refractive_index/refractiveindex/

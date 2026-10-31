@@ -21,6 +21,12 @@ dependencies = [
     "PyMieScatt",
 ]
 
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.setuptools.dynamic]
 version = { attr = "mie_perso.__version__" }
 

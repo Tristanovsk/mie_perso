@@ -243,18 +243,20 @@ class Processor():
             S11, S12, S33, S34 (dimensionless, from the amplitudes S1, S2).
         '''
         m, x, u = p
-        Ntheta = len(u)
-        S1, S2 = np.zeros([Ntheta], dtype=complex), np.zeros([Ntheta], dtype=complex)
+        u = np.asarray(u, dtype=float)
+        S1, S2 = np.zeros(u.shape, dtype=complex), np.zeros(u.shape, dtype=complex)
 
-        nmax = np.round(2 + x + 4 * np.power(x, 1 / 3))
         an, bn = ps.AutoMie_ab(m, x)
-        for iu, u_ in enumerate(u):
-            pin, taun = ps.MiePiTau(u_, nmax)
-            n = np.arange(1, int(nmax) + 1)
+        # upward recurrence of pi_n, tau_n (as in PyMieScatt MiePiTau),
+        # vectorized over the angles and summed on the fly
+        pi_prev, pi_n = np.zeros_like(u), np.ones_like(u)
+        for n in range(1, len(an) + 1):
+            if n > 1:
+                pi_prev, pi_n = pi_n, ((2 * n - 1) * u * pi_n - n * pi_prev) / (n - 1)
+            tau_n = n * u * pi_n - (n + 1) * pi_prev
             n2 = (2 * n + 1) / (n * (n + 1))
-            S1[iu] = np.sum(n2[0:len(an)] * (an * pin[0:len(an)] + bn * taun[0:len(bn)]))
-            S2[iu] = np.sum(n2[0:len(an)] * (an * taun[0:len(an)] + bn * pin[0:len(bn)]))
-            # S1, S2 = ps.MieS1S2(m, x, u_)
+            S1 += n2 * (an[n - 1] * pi_n + bn[n - 1] * tau_n)
+            S2 += n2 * (an[n - 1] * tau_n + bn[n - 1] * pi_n)
         S11 = (0.5 * (np.abs(S2) ** 2 + np.abs(S1) ** 2)).real
         S12 = (0.5 * (np.abs(S2) ** 2 - np.abs(S1) ** 2)).real
         S33 = (0.5 * (np.conjugate(S2) * S1 + S2 * np.conjugate(S1))).real

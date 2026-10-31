@@ -25,8 +25,8 @@ size_param = psd.SizeParam
 psd = psd.PSD()
 
 
-ofile = 'mie_perso/data/mueller_mie_microplastic.nc'
-ofile = 'mie_perso/data/mueller_mie_microplastic1.050+0.000j.nc'
+ofile = 'data/mueller_mie_microplastic.nc'
+ofile = 'data/mueller_mie_microplastic1.050+0.000j.nc'
 
 if os.path.exists(ofile):
     mueller = xr.open_dataset(ofile)

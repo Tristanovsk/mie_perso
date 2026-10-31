@@ -256,6 +256,21 @@ $\frac{1}{2}\int_0^\pi p(\theta)\sin\theta\,\mathrm{d}\theta = 1$, the conventio
 OSOAA radiative transfer code used in the tutorial. The asymmetry parameter is
 then $g = \frac{1}{2}\int_0^\pi p(\theta)\cos\theta\sin\theta\,\mathrm{d}\theta$.
 
+### Angular resolution of the forward peak
+
+For $x \gg 1$, about half of $C_{sca}$ is carried by diffraction, concentrated in a
+forward peak
+$S_{11} \simeq x^4 \left[J_1(x\theta)/(x\theta)\right]^2$ (Fraunhofer diffraction by a disk of radius $r$),
+with a first zero at $\theta = 3.83/x$ followed by rings of period $\pi/x$. On a
+regular grid of step $\Delta\theta$, the trapezoidal rule only satisfies
+{eq}`eq-f11-norm` for $x \ll 1/\Delta\theta$: with $\Delta\theta = 0.05°$, the
+integral of $F_{11}$ falls to about half of $\langle C_{sca} \rangle$ for millimetre
+particles in the visible, and normalizing $F_{11}$ by its own integral would then
+nearly double the side and backward scattering. The forward part of the matrix is therefore
+computed on a fine geometric grid ({py:func}`mie_perso.size_average.forward_grid`,
+step of 1.3 % of the angle up to 2°) and merged with the regular grid
+({py:func}`mie_perso.size_average.merge_forward`).
+
 ## Polydisperse particles
 
 Natural particles are polydisperse. For a number size distribution $n(r)$

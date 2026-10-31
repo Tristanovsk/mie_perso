@@ -368,7 +368,8 @@ cmap = mpl.colors.LinearSegmentedColormap.from_list("",
 
 # cmap = plt.cm.bone_r
 # norm = mpl.colors.Normalize(vmin=0, vmax=500)
-mueller_ = mueller.isel(x=[1, 10, 20, 50, 100, 150, 160, 170, 250])
+# one refractive index (nr=2) for a few size parameters
+mueller_ = mueller.isel(x=[1, 10, 20, 50, 100, 150, 160, 170, 250], nr=2).compute()
 
 norm = mpl.colors.LogNorm(vmin=mueller_.x.min(), vmax=mueller_.x.max())
 sm = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -377,7 +378,8 @@ fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12, 6), sharey=True)
 fig.subplots_adjust(bottom=0.15, top=0.985, left=0.1, right=0.98,
                     hspace=0.01, wspace=0.025)
 
-for x_, m_ in list(mueller_.isel(nr=2).groupby('x')):
+for x_ in mueller_.x.values:
+    m_ = mueller_.sel(x=x_)
     axs[0].plot(ang, m_.S11, color=cmap(norm(x_)), alpha=0.6, lw=1)
     axs[1].plot(ang, m_.S11, color=cmap(norm(x_)), alpha=0.6, lw=1)
 axs[1].minorticks_on()
@@ -393,7 +395,8 @@ fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(12, 10), sharex=True)
 fig.subplots_adjust(bottom=0.1, top=0.98, left=0.1, right=0.92,
                     hspace=0.1, wspace=0.05)
 
-for x_, m_ in list(mueller_.groupby('x')):
+for x_ in mueller_.x.values:
+    m_ = mueller_.sel(x=x_)
     axs[0, 0].plot(ang, m_.S11, color=cmap(norm(x_)), alpha=0.5, lw=1)
     axs[0, 1].plot(ang, m_.S12 / m_.S11, color=cmap(norm(x_)), alpha=0.5, lw=1)
     axs[1, 0].plot(ang, m_.S33 / m_.S11, color=cmap(norm(x_)), alpha=0.5, lw=1)

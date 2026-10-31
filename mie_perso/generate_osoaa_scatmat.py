@@ -36,6 +36,16 @@ qfile = 'data/Qeff_mie_microplastic_v4.nc'
 mueller = xr.open_dataset(ofile, chunks={'nr': 1})
 xQeff = xr.open_dataset(qfile)
 
+# forward peak on a fine angular grid (the 0.05 deg step of the LUT does not
+# resolve the diffraction peak of the large particles), computed once
+ffile = 'data/mueller_mie_microplastic_v4_forward.nc'
+if not os.path.exists(ffile):
+    theta_fwd = size_average.forward_grid()
+    mueller_fwd = xr.concat([pmie.ScatMat_mp(complex(nr_, float(mueller.ni)), mueller.x.values, theta_fwd)
+                             for nr_ in mueller.nr.values], 'nr')
+    mueller_fwd.to_netcdf(ffile)
+mueller_fwd = xr.open_dataset(ffile, chunks={'nr': 1})
+
 nMedium = 1.334
 wl = 800
 wl_medium = wl / nMedium
@@ -143,7 +153,11 @@ weights = size_average.psd_family_weights(
     rmed_list, 'r_med', n_medium=nMedium).assign_coords(wavelength=wavelengths_nm)
 
 # scattering matrix and cross sections in micron**2
-xscat_mat = size_average.integrate_scatmat(mueller, weights).compute()
+# merged with the forward peak: 1/2 int S11 sin(theta) dtheta = Csca
+xscat_mat = size_average.merge_forward(size_average.integrate_scatmat(mueller, weights),
+                                       size_average.integrate_scatmat(mueller_fwd, weights)).compute()
+theta = xscat_mat.theta
+ang = theta * 180. / np.pi
 xCrossSection = size_average.integrate_cross_section(xQeff.isel(ni=0), weights, variables=('Qsca', 'Qext')).compute()
 # TODO save into netcdf with good file naming
 

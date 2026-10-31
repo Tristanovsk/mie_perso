@@ -60,7 +60,7 @@ for x_ in x:
 xQeff=pd.DataFrame(np.concatenate(Qeff),
                    columns=['x','nr','ni','Qext', 'Qsca', 'Qabs', 'g', 'Qpr', 'Qback', 'Qratio']
                    ).set_index(['x','nr','ni']).to_xarray()
-ofile = 'mie_perso/data/Qeff_mie_microplastic_v4.nc'
+ofile = 'data/Qeff_mie_microplastic_v4.nc'
 xQeff.to_netcdf(ofile)
 
 plt.figure()

@@ -20,6 +20,13 @@ If you have not the administrator rights, you can install the package as follows
 pip install -e .
 ```
 
+To run the tests (comparison with PyMieScatt and with direct size integration):
+
+```
+pip install -e .[test]
+pytest
+```
+
 ### Examples
 
 Check notebooks for basic examples. You could be able to reproduce massive computation and get scattering matrix for different size (or refractive index) distrubtions.

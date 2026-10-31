@@ -26,6 +26,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (`xarray.dot`) over the size parameter, for all wavelengths and distributions in
   one (dask-friendly) pass over the table: `psd_weights`, `psd_family_weights`,
   `integrate_scatmat`, `integrate_cross_section`, `mean_asymmetry`.
+- `size_average.forward_grid` and `size_average.merge_forward`: scattering matrix
+  on a fine geometric angular grid up to 2° merged with the regular grid, to
+  resolve the forward diffraction peak of large particles (the 0.05° grid gave
+  $\frac{1}{2}\int F_{11}\sin\theta\,d\theta \approx 0.53\,C_{sca}$ for a
+  median radius of 1 mm). Documented in the theory page.
+- Test suite (`tests/`, `pytest`): scattering matrix, efficiencies and
+  `S1S2Function` against PyMieScatt, $C_{sca}$ from $S_{11}$, size
+  distributions, size averaging against direct integration over the radius, and
+  forward-peak normalization.
+- `refractive_index.water_refractive_index`: refractive index of water
+  (Quan and Fry 1997, Li et al. 2015, Kedenburg et al. 2012, Max and Chapados 2009,
+  Hale and Querry 1973, composite of Harmel et al. 2018), used by the beads and
+  formazin scripts. The third-party `refractiveindex.info` database is not
+  tracked.
 
 ### Changed
 
@@ -47,6 +61,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   The scattering matrices of these scripts are now normalized by
   $\int n(r)\,dr$ and expressed in µm² (also for `size_class = 'large'`, where the
   cross sections were previously computed in mm²).
+- `Processor.ScatMat` computes the angular functions $\pi_n, \tau_n$ for all the
+  angles at once (recurrence over $n$ vectorized over the angles) instead of one
+  call of PyMieScatt `MiePiTau` per angle: ~13× faster, identical results
+  (relative difference < 1e-13).
+- `generate_osoaa_scatmat.py` merges the forward peak computed on
+  `forward_grid` (`data/mueller_mie_microplastic_v4_forward.nc`, generated on the
+  first run) into the size-averaged matrices: the OSOAA files are now on a
+  non-uniform angular grid and their side and backward scattering is no longer
+  overestimated for large particles.
+- `Qlut_mie.py` only generates (or reads) the efficiency look-up table on
+  `(x, mr, mi)` and plots it; the analysis copied from `plastic_mie.py`, which
+  needed an undefined scattering-matrix LUT, was removed.
+- Data paths of `junge.py`, `beads.py`, `check_lut.py` and `test_simu.py`
+  updated to `data/`.
 - Multiprocessing pools are opened in a context manager with `Processor.processes`
   workers, instead of a hard-coded 38 workers.
 
@@ -56,6 +84,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (`NameError`) and stored the complex amplitudes `S1`, `S2` in real arrays. It now
   matches PyMieScatt `ScatteringFunction`, including the `normalization` option.
 - `Processor.Qeff_compute` no longer writes to `/data/tmp/tmp_mieperso.txt`.
+- Plotting loops over `groupby('x')` / `groupby('nr')` (2-D arrays with recent
+  xarray) in `formazin_mie.py`, `plastic_mie.py`,
+  `formazin_mie_hyperspectral.py` and `backscattering_calib_beads.py`.
+- `formazin_mie_hyperspectral.py`: the mean cross section `Csca_hyp` used radii in
+  nm with a median radius in µm; the monodisperse case used the array of LUT radii
+  instead of the bead radius.
+- `formazin_mie_hyperspectral.py`, `backscattering_calib_beads.py`: the
+  size-distribution loops used the median radius instead of each radius for
+  $\pi r^2$, and the salinity loops did not update the wavelength in water.
+- `backscattering_calib_beads.py`: bead radius in µm (`radius_nm * 1e3` →
+  `* 1e-3`), the figure name of the angular convolution (`angle` overwritten by a
+  list), and the salinity plot no longer uses measurements that are not
+  loaded in this script.
+- `water_refractive_index.nair` indexed past the end of its coefficient list.
 - `SyntaxWarning: invalid escape sequence` in `SizeParam.to_annotation` and
   `SizeParam.to_annotation_r` (Python ≥ 3.12); the returned labels are unchanged.
 
